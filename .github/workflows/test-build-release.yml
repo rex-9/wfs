@@ -1,0 +1,81 @@
+name: Test, Build & Release for Production
+on: 
+  pull_request: 
+    branches: 
+      - main
+      - dev
+  push: 
+    branches: 
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs: 
+  run_tests:
+    name: Run Flutter test and analyze
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "12.x"
+      - uses: subosito/flutter-action@v2
+        with: 
+          channel: "stable"
+      - run: sudo gem install bundler
+      - run: sudo bundle update
+      - run: sudo bundle install
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  # build_ipa:
+  #   name: Build iOS
+  #   needs: [run_tests]
+  #   runs-on: macos-latest
+  #   steps: 
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-java@v1
+  #       with:
+  #         java-version: "12.x"
+  #     - uses: subosito/flutter-action@v2
+  #       with: 
+  #         channel: "stable"
+  #     - run: flutter clean
+  #     - run: flutter build ipa --no-codesign
+  #     - run: |
+  #         cd build/ios/archive
+  #         mkdir payload
+  #         cd payload
+  #         ln -s ../Runner.xcarchive
+  #         cd ..
+  #         zip -r app.ipa payload
+
+  build_apk:
+    name: Build Android
+    needs: [run_tests]
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "12.x"
+      - uses: subosito/flutter-action@v2
+        with: 
+          channel: "stable"
+      - run: flutter clean
+      - run: flutter build apk --debug --split-per-abi
+
+  release:
+    # name: Release Android and iOS
+    # needs: [run_tests, build_ipa, build_apk]
+    name: Release Android
+    needs: [run_tests, build_apk]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "build/app/outputs/apk/debug/*"
+          # artifacts: "build/app/outputs/apk/debug/*,build/ios/archive/app.ipa"
+          tag: v1.0.${{ github.run_number }}
+          token: ${{ secrets.TOKEN }}
