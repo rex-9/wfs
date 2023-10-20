@@ -67,6 +67,8 @@ jobs:
       - run: flutter build apk --debug --split-per-abi
 
   release:
+    # name: Release Android and iOS
+    # needs: [run_tests, build_ipa, build_apk]
     name: Release Android
     needs: [run_tests, build_apk]
     runs-on: ubuntu-latest
