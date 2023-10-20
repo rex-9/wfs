@@ -72,6 +72,8 @@ jobs:
     name: Release Android
     needs: [run_tests, build_apk]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: ncipollo/release-action@v1
         with:
